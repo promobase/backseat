@@ -5,18 +5,7 @@ description = "Copilot for your social media platforms & ads"
 authors = [{ name = "Ray Li", email = "li.ruize09@gmail.com" }]
 readme = "README.md"
 keywords = ['python']
-requires-python = ">=3.9,<4.0"
-classifiers = [
-    "Intended Audience :: Developers",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
+requires-python = ">=3.12,<4.0"
 
 [project.urls]
 Homepage = "https://rayli09.github.io/backseat/"
@@ -28,7 +17,7 @@ dev = [
     "pytest>=7.2.0",
     "pre-commit>=2.20.0",
     "tox-uv>=1.11.3",
-    
+
     "mypy>=0.991",
     "pytest-cov>=4.0.0",
     "ruff>=0.11.5",
@@ -83,7 +72,8 @@ select = [
     # mccabe
     "C90",
     # pycodestyle
-    "E", "W",
+    "E",
+    "W",
     # pyflakes
     "F",
     # pygrep-hooks
@@ -114,4 +104,3 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["backseat"]
-
