@@ -1,0 +1,33 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "isolated": false,
+    "userDataDir": "./browser-data",
+    "launchOptions": {
+      "headless": false,
+      "channel": "chrome"
+    },
+    "contextOptions": {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    }
+  },
+  "capabilities": [
+    "core",
+    "tabs",
+    "pdf",
+    "history",
+    "wait",
+    "files",
+    "testing"
+  ],
+  "vision": true,
+  "outputDir": "./output",
+  "network": {
+    "allowedOrigins": ["*"],
+    "blockedOrigins": []
+  },
+  "noImageResponses": false
+}

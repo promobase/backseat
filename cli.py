@@ -1,11 +1,8 @@
 import asyncio
-import os
 from pathlib import Path
 
-from agents import Agent, Runner, function_tool, run_demo_loop
+from agents import Agent, run_demo_loop
 from agents.mcp import MCPServer, MCPServerStdio
-from fastmcp import Client, FastMCP
-from openai import AsyncOpenAI
 
 from backseat.utils import load_dotenv
 
@@ -19,7 +16,8 @@ config = {
             "command": "npx",
             "args": [
                 "@playwright/mcp@latest",
-                f"--config {playwrightmcp_config_path}",
+                "--config",
+                str(playwrightmcp_config_path),
             ],
         },
     }
