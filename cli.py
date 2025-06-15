@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 
 from agents import Agent, run_demo_loop
@@ -24,8 +25,13 @@ config = {
 }
 
 
+@dataclass
+class BrowserContext:
+    pass
+
+
 async def run(mcp_server: MCPServer):
-    agent = Agent(
+    agent = Agent[BrowserContext](
         name="Browser Automation Agent",
         instructions="Use tools to automate browser tasks. If you need user input, use the `need_user_input` tool. You will be decompose user irequests into smaller steps and ONLY use tools to complete them.",
         mcp_servers=[mcp_server],
