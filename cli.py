@@ -25,17 +25,20 @@ progress:
 """
 
 playwrightmcp_config_path = Path(__file__).parent / "backseat" / "config" / "playwrightmcp.json"
+storage_state_path = Path(__file__).parent / "tmp" / "storage-state.json"
 
 config = {
     "mcpServers": {
         "playwright": {
             "command": "npx",
             "args": [
-                "github:promobase/playwright-mcp@latest",
-                "--cdp-endpoint",
-                "http://localhost:9222",
-                # "--config",
-                # str(playwrightmcp_config_path),
+                "github:promobase/playwright-mcp#main",
+                # "--cdp-endpoint",
+                # "http://localhost:9222",
+                "--config",
+                str(playwrightmcp_config_path),
+                # "--storage-state",
+                # str(storage_state_path),
             ],
         },
     }
@@ -77,9 +80,11 @@ class BaseBrowserAgent(Agent, Generic[TContext]):
     pass
 
 
+logger = get_logger(__name__)
+
+
 #  ---- agents ----
 async def main():
-    logger = get_logger("playwrightmcp.cli.main")
     logger.info("CLI main started.")
 
     try:
@@ -98,6 +103,9 @@ async def main():
             # NOTE: let's try not to use local version -- instead we extend the MS playwright server capabilities.
             await playwright_server.connect()
             logger.info("Successfully connected to Playwright MCP client (npx).")
+            tools = await playwright_server.list_tools()
+            logger.info(f"\nAvailable tools: {len(tools)}")
+            [print(f"Tool: {tool.name} - {tool.description}") for tool in tools]
 
             openai_client = AsyncOpenAI()
             model_settings = ModelSettings(temperature=0)
