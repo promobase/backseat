@@ -5,9 +5,9 @@ from typing import Generic
 
 from agents import Agent, AsyncOpenAI, OpenAIChatCompletionsModel, TContext, function_tool
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
-from agents.mcp import MCPServer, MCPServerStdio
+from agents.mcp import MCPServerStdio
 
-from backseat.utils import load_dotenv, run_loop
+from backseat.utils import get_logger, load_dotenv, run_loop
 
 load_dotenv()
 """
@@ -32,13 +32,11 @@ config = {
             "command": "npx",
             "args": [
                 "@playwright/mcp@latest",
-                "--config",
-                str(playwrightmcp_config_path),
+                "--cdp-endpoint",
+                "http://localhost:9222",
+                # "--config",
+                # str(playwrightmcp_config_path),
             ],
-        },
-        "fetch": {
-            "command": "uvx",
-            "args": ["mcp-server-fetch"],
         },
     }
 }
@@ -80,40 +78,38 @@ class BaseBrowserAgent(Agent, Generic[TContext]):
 
 
 #  ---- agents ----
-async def run(mcp_server: MCPServer):
-    openai_client = AsyncOpenAI()
-    browser_agent = Agent(
-        name="Browser Automation Agent",
-        instructions=BROWSER_AGENT_INSTRUCTIONS,
-        mcp_servers=[mcp_server],
-        tools=[wait_for],
-        model=OpenAIChatCompletionsModel(
-            "gpt-4.1-mini",
-            openai_client=openai_client,
-        ),
-    )
-    _planner_agent = Agent(
-        name="Browser Planning Agent",
-        instructions=PLANNER_INSTRUCTIONS,
-        handoffs=[browser_agent],
-        model=OpenAIChatCompletionsModel(
-            "o4-mini",
-            openai_client=openai_client,
-        ),
-    )
-    await run_loop(browser_agent)
-    # result = await Runner.run(agent, "What's Google's latest stock price?")
-    # print(result.final_output)
-    pass
 
 
 async def main():
-    async with (
-        MCPServerStdio(name="playwright", params=config["mcpServers"]["playwright"]) as playwright_server,
-        MCPServerStdio(name="fetch", params=config["mcpServers"]["fetch"]) as fetch_server,
-    ):
-        await asyncio.gather(playwright_server.connect(), fetch_server.connect())
-        await run(playwright_server)
+    logger = get_logger("playwrightmcp.cli.main")
+    logger.info("CLI main started.")
+    try:
+        logger.info("Initializing Playwright MCP client (npx @playwright/mcp@latest)...")
+        async with (
+            MCPServerStdio(name="playwright", params=config["mcpServers"]["playwright"]) as playwright_server,
+        ):
+            logger.info("Connecting to Playwright MCP client (npx)...")
+            await playwright_server.connect()
+            logger.info("Successfully connected to Playwright MCP client (npx).")
+
+            openai_client = AsyncOpenAI()
+            browser_agent = Agent(
+                name="Browser Automation Agent",
+                instructions=BROWSER_AGENT_INSTRUCTIONS,
+                mcp_servers=[playwright_server],
+                tools=[wait_for],
+                model=OpenAIChatCompletionsModel(
+                    "gpt-4.1-mini",
+                    openai_client=openai_client,
+                ),
+            )
+            logger.info("Starting agent run_loop...")
+            await run_loop(browser_agent)
+            logger.info("Agent run_loop finished.")
+    except Exception as e:
+        logger.error(f"An error occurred in main: {e}", exc_info=True)
+    finally:
+        pass
 
 
 if __name__ == "__main__":
