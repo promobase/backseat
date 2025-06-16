@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generic
 
-from agents import Agent, AsyncOpenAI, OpenAIChatCompletionsModel, TContext, function_tool
+from agents import Agent, AsyncOpenAI, ModelSettings, OpenAIChatCompletionsModel, TContext, function_tool
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from agents.mcp import MCPServerStdio
 
@@ -31,7 +31,7 @@ config = {
         "playwright": {
             "command": "npx",
             "args": [
-                "@playwright/mcp@latest",
+                "github:promobase/playwright-mcp@latest",
                 "--cdp-endpoint",
                 "http://localhost:9222",
                 # "--config",
@@ -78,21 +78,29 @@ class BaseBrowserAgent(Agent, Generic[TContext]):
 
 
 #  ---- agents ----
-
-
 async def main():
     logger = get_logger("playwrightmcp.cli.main")
     logger.info("CLI main started.")
+
     try:
         logger.info("Initializing Playwright MCP client (npx @playwright/mcp@latest)...")
         async with (
             MCPServerStdio(name="playwright", params=config["mcpServers"]["playwright"]) as playwright_server,
+            # MCPServerStdio(
+            #     name="local-playwright",
+            #     params={
+            #         "command": "uv",
+            #         "args": ["run", "backseat/server.py"],
+            #     },
+            # ) as local_playwright_server,
         ):
-            logger.info("Connecting to Playwright MCP client (npx)...")
+            # await local_playwright_server.connect()
+            # NOTE: let's try not to use local version -- instead we extend the MS playwright server capabilities.
             await playwright_server.connect()
             logger.info("Successfully connected to Playwright MCP client (npx).")
 
             openai_client = AsyncOpenAI()
+            model_settings = ModelSettings(temperature=0)
             browser_agent = Agent(
                 name="Browser Automation Agent",
                 instructions=BROWSER_AGENT_INSTRUCTIONS,
@@ -102,6 +110,7 @@ async def main():
                     "gpt-4.1-mini",
                     openai_client=openai_client,
                 ),
+                model_settings=model_settings,
             )
             logger.info("Starting agent run_loop...")
             await run_loop(browser_agent)

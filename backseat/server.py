@@ -39,19 +39,6 @@ class PlaywrightContext:
 
 def load_config() -> dict[str, Any]:
     """Load configuration from playwrightmcp.json."""
-    # Note: This code expects a 'config/playwrightmcp.json' file relative to this script.
-    # Example playwrightmcp.json:
-    # {
-    #   "browser": {
-    #     "launchOptions": {
-    #       "headless": true,
-    #       "args": []
-    #     },
-    #     "contextOptions": {},
-    #     "userDataDir": "./user_data"
-    #   },
-    #   "outputDir": "./output"
-    # }
     config_path = Path(__file__).parent / "config" / "playwrightmcp.json"
     if not config_path.exists():
         print(f"Warning: Config file not found at {config_path}. Using empty config.")
@@ -92,19 +79,22 @@ async def playwright_lifespan(server: FastMCP) -> AsyncIterator[PlaywrightContex
             args.append(f"--remote-debugging-port={cdp_port}")
         launch_options["args"] = args
 
-        user_data_dir_path = browser_config.get("userDataDir")
+        storage_state_path = browser_config.get("storageState")
         p = await async_playwright().start()
-        if user_data_dir_path:
-            user_data_dir = Path(user_data_dir_path)
-            user_data_dir.mkdir(parents=True, exist_ok=True)
-            # launch_persistent_context returns a context, not a browser
-            context = await p.chromium.launch_persistent_context(
-                user_data_dir=str(user_data_dir), **launch_options, **context_options
-            )
-            browser = context.browser
-        else:
-            browser = await p.chromium.launch(**launch_options)
-            context = await browser.new_context(**context_options)
+
+        # Always launch browser normally (not persistent context)
+        browser = await p.chromium.launch(**launch_options)
+
+        # Create context with storage state if provided
+        if storage_state_path:
+            storage_state_file = Path(storage_state_path)
+            if storage_state_file.exists():
+                context_options["storage_state"] = str(storage_state_file)
+                logger.info(f"Using storage state from: {storage_state_file}")
+            else:
+                logger.warning(f"Storage state file not found at {storage_state_file}, creating new context")
+
+        context = await browser.new_context(**context_options)
 
         page = await context.new_page()
         cdp_url = f"http://localhost:{cdp_port}"
@@ -188,6 +178,19 @@ def get_browser_status() -> str:
     ctx = get_ctx()
     status = "connected" if ctx.browser.is_connected() else "disconnected"
     return f"Browser status: {status}\nCDP URL: {ctx.cdp_url}"
+
+
+@mcp.tool()
+async def save_storage_state(filename: str = "storage-state.json") -> str:
+    """Save the current browser storage state (cookies, localStorage, etc.) to a file."""
+    ctx = get_ctx()
+    output_dir = Path(ctx.config.get("outputDir", "./tmp"))
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    storage_path = output_dir / filename
+    await ctx.context.storage_state(path=str(storage_path))
+    ctx.logger.info(f"Storage state saved to {storage_path}")
+    return f"Storage state saved to {storage_path.resolve()}"
 
 
 if __name__ == "__main__":

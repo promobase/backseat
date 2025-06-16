@@ -2,7 +2,7 @@
   "browser": {
     "browserName": "chromium",
     "isolated": false,
-    "userDataDir": "./browser-data",
+    "storageState": "./tmp/storage-state.json",
     "launchOptions": {
       "headless": false,
       "channel": "chrome"

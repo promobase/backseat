@@ -14,6 +14,18 @@ from agents.result import RunResultBase
 from openai.types.responses.response_text_delta_event import ResponseTextDeltaEvent
 
 
+def get_logger(name: str) -> Any:
+    import logging
+
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+
 def load_dotenv(dotenv_path=".env"):
     """
     Loads environment variables from a .env file into os.environ.
